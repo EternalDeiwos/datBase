@@ -1,21 +1,51 @@
-FROM node:6.9
+FROM node:8-stretch
+
 EXPOSE 80
-EXPOSE 25
 
 ENV PORT 80
-ENV NODE_ENV development
+ENV NODE_ENV production
+ENV DEBUG dat-registry
 
-ENV TOWNSHIP_SECRET "some secret string here"
-ENV DATADIR /data
+ENV DATA_DIR /data
 VOLUME /data
 
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
-COPY package.json /usr/src/app/
-RUN npm install --production --loglevel warn 
-COPY . /usr/src/app
-RUN npm run build-js-prod && npm run build-css && npm run minify && npm run version
+ENV MIXPANEL_ENABLE false
+# ENV MIXPANEL_KEY "not a key"
 
-# do docker exec: npm run database
+ENV TOWNSHIP_SECRET "some secret string here"
+ENV TOWNSHIP_DB township.db
+ENV TOWNSHIP_PUB_KEY "openssl public key (ES512)"
+ENV TOWNSHIP_PRV_KEY "openssl private key (ES512)"
+ENV TOWNSHIP_DSA_JWA ES512
 
-CMD npm run database && DEBUG=dat-registry npm run server
+ENV SMTP_ENABLE false
+ENV SMTP_HOST smtp.postmarkapp.com
+ENV SMTP_PORT 2525
+ENV SMTP_USERNAME username
+ENV SMTP_PASSWORD password
+
+ENV DB_DIALECT sqlite3
+ENV DB_FILE dat-production.db
+
+ENV WHITELIST_ENABLE false
+ENV WHITELIST_FILE whitelist.txt
+ENV WHITELIST undefined
+
+RUN apt-get update && apt-get install --yes \
+  git \
+  openssl \
+  build-essential \
+  libtool
+
+RUN mkdir -p /app
+WORKDIR /app
+COPY package.json /app/
+RUN npm install --production --loglevel warn
+COPY . /app
+RUN npm run build-js-prod && \
+  npm run build-css && \
+  npm run minify && \
+  npm run version && \
+  npm run database
+
+CMD [ "npm", "run", "server" ]
