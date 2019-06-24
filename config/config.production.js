@@ -1,32 +1,62 @@
-var path = require('path')
+
+const path = require('path')
+const fs = require('fs')
+
+function process_env (input, def) {
+  if (!input) {
+    return def
+  }
+
+  const num = Number(input)
+
+  if (!Number.isNaN(num)) {
+    return num
+  }
+
+  switch (input) {
+    case 'false':
+      return false
+    case 'true':
+      return true
+    default:
+      return input
+  }
+}
+
+const whitelist_file = process_env(process.env.WHITELIST_FILE, 'whitelist.txt')
+
+if (process.env.WHITELIST) {
+  const whitelist = process.env.whitelist.split(',')
+  fs.writeFileSync(path.join(__dirname, whitelist_file), whitelist.join('\n'), { mode: 0o600 })
+}
 
 module.exports = {
-  data: '',
-  mixpanel: process.env.MIXPANEL || path.join('secrets', 'mixpanel'),
+  data: process_env(process.env.DATA_DIR, '/data'),
+  mixpanel: process_env(process.env.MIXPANEL_ENABLE, false) ? process.env.MIXPANEL_KEY : undefined,
   township: {
     secret: process.env.TOWNSHIP_SECRET,
-    db: 'datland-township.db',
-    publicKey: path.join('secrets', 'ecdsa-p521-public.pem'),
-    privateKey: path.join('secrets', 'ecdsa-p521-private.pem'),
-    algorithm: 'ES512'
+    db: process_env(process.env.TOWNSHIP_DB, 'township.db'),
+    publicKey: process.env.TOWNSHIP_PUB_KEY_PATH,
+    privateKey: process.env.TOWNSHIP_PRV_KEY_PATH,
+    algorithm: process_env(process.env.TOWNSHIP_DSA_JWA, 'ES512'),
   },
   email: {
-    from: 'noreply@datproject.org',
-    smtpConfig: {
-      host: 'smtp.postmarkapp.com',
-      port: 2525,
+    from: 'noreply@dat.home.gryphus.io',
+    smtpConfig: !process_env(process.env.SMTP_ENABLE, false) ? undefined : {
+      host: process_env(process.env.SMTP_HOST, 'smtp.postmarkapp.com'),
+      port: process_env(process.env.SMTP_PORT, 2525),
       auth: {
-        user: process.env.POSTMARK_KEY,
-        pass: process.env.POSTMARK_KEY
+        user: process.env.SMTP_USERNAME,
+        pass: process.env.SMTP_PASSWORD,
       }
     }
   },
   db: {
-    dialect: 'sqlite3',
+    dialect: process_env(process.env.DB_DIALECT, 'sqlite3'),
     connection: {
-      filename: 'datland-production.db'
+      filename: process_env(process.env.DB_FILE, 'dat-production.db'),
     },
     useNullAsDefault: true
   },
-  whitelist: false
+  whitelist: process_env(process.env.WHITELIST_ENABLE, false) ? whitelist_file : false,
 }
