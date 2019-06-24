@@ -7,6 +7,10 @@ function process_env (input, def) {
     return def
   }
 
+  if (input === 'undefined') {
+    return def
+  }
+
   const num = Number(input)
 
   if (!Number.isNaN(num)) {
@@ -25,7 +29,7 @@ function process_env (input, def) {
 
 const whitelist_file = process_env(process.env.WHITELIST_FILE, 'whitelist.txt')
 
-if (process.env.WHITELIST) {
+if (process_env(process.env.WHITELIST)) {
   const whitelist = process.env.whitelist.split(',')
   fs.writeFileSync(path.join(__dirname, whitelist_file), whitelist.join('\n'), { mode: 0o600 })
 }
@@ -36,8 +40,8 @@ module.exports = {
   township: {
     secret: process.env.TOWNSHIP_SECRET,
     db: process_env(process.env.TOWNSHIP_DB, 'township.db'),
-    publicKey: process.env.TOWNSHIP_PUB_KEY_PATH,
-    privateKey: process.env.TOWNSHIP_PRV_KEY_PATH,
+    publicKey: process.env.TOWNSHIP_PUB_KEY,
+    privateKey: process.env.TOWNSHIP_PRV_KEY,
     algorithm: process_env(process.env.TOWNSHIP_DSA_JWA, 'ES512'),
   },
   email: {
